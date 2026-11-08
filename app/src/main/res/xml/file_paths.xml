@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <cache-path
+        name="shared_generated_images"
+        path="generated_images/" />
+    <cache-path
+        name="shared_generated_audio"
+        path="generated_audio/" />
+</paths>

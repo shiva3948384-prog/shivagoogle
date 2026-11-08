@@ -1,0 +1,19 @@
+project_id = "xwkfyamulhfptgywlvef"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+enabled = true
+enable_signup = true
+
+[functions.ai-chat]
+verify_jwt = false
+
+[functions.auth-otp]
+verify_jwt = false
+

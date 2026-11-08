@@ -1,0 +1,32 @@
+<resources>
+    <string name="app_name">Smarter AI</string>
+    <string name="tagline">Smarter AI Multi-Model Assistant</string>
+    <string name="welcome_greeting">How can I help you today?</string>
+    <string name="welcome_subtitle">Chat with Smarter AI models, generate images, or listen with on-device read-aloud.</string>
+    <string name="new_chat">New Chat</string>
+    <string name="search_chats">Search Chats</string>
+    <string name="image_studio">Image Studio</string>
+    <string name="audio_studio">Voice &amp; Read Aloud</string>
+    <string name="search_placeholder">Search conversation titles &amp; messages…</string>
+    <string name="model_selector_title">Select AI Model</string>
+    <string name="search_models_placeholder">Search models by name or capability…</string>
+    <string name="composer_placeholder">Message Smarter AI…</string>
+    <string name="send_message">Send message</string>
+    <string name="stop_generation">Stop generating</string>
+    <string name="attach_image">Attach image</string>
+    <string name="copy_response">Copy response</string>
+    <string name="regenerate_response">Regenerate response</string>
+    <string name="edit_message">Edit message</string>
+    <string name="sign_in">Sign In</string>
+    <string name="sign_up">Create Account</string>
+    <string name="sign_out">Sign Out</string>
+    <string name="reset_password">Reset Password</string>
+    <string name="settings">Settings</string>
+    <string name="delete_conversation">Delete Conversation</string>
+    <string name="rename_conversation">Rename Conversation</string>
+    <string name="delete_account">Delete Account</string>
+    <string name="verify_email_title">Verify your email</string>
+    <string name="verify_email_button">Verify &amp; Continue</string>
+    <string name="resend_otp_button">Resend verification code</string>
+    <string name="cd_app_logo">Smarter AI Logo</string>
+</resources>

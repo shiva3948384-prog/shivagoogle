@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Primary central AI star (baked directly in 108x108 safe zone 26..82) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M50,28 L55.8,44.2 L72,50 L55.8,55.8 L50,72 L44.2,55.8 L28,50 L44.2,44.2 Z" />
+    <!-- Top-right Pollinations / Multi-Model spark -->
+    <path
+        android:fillColor="#FF93C5FD"
+        android:pathData="M73,25 L75.6,31.4 L82,34 L75.6,36.6 L73,43 L70.4,36.6 L64,34 L70.4,31.4 Z" />
+    <!-- Bottom-right accent spark -->
+    <path
+        android:fillColor="#FFE0E7FF"
+        android:pathData="M71,63 L73.2,68.8 L79,71 L73.2,73.2 L71,79 L68.8,73.2 L63,71 L68.8,68.8 Z" />
+</vector>

@@ -1,0 +1,857 @@
+# SMARTER AI — COMPLETE MASTER UPGRADE
+## Core Performance Fixes + Long Conversation Reliability + Live Real-Time Intelligence + 12 AI Models + GPT 6 Luna Voice Chat
+
+You are working on my existing Android application **Smarter AI**.
+
+I want you to implement a comprehensive upgrade to the existing application. This is an existing production-oriented project, not a new application.
+
+Your responsibility is to inspect the current codebase, identify the actual causes of existing problems, implement permanent architectural fixes, integrate new capabilities, run tests, and provide a detailed implementation report.
+
+Do not simply provide recommendations or sample code. Make the actual changes in the existing project.
+
+# PART 1 — STRICT PROJECT RULES
+
+Before making any changes:
+
+1. Inspect the complete existing project architecture.
+2. Inspect the Android application, Kotlin code, Jetpack Compose UI, repositories, ViewModels, Supabase Edge Functions, Apinex integration, Room database, and existing networking implementation.
+3. Identify the actual causes of performance degradation and requests becoming stuck.
+4. Reuse existing architecture wherever possible.
+5. Avoid unnecessary rewrites.
+6. Preserve all existing features and working implementations.
+7. Do not change the application package ID, application identity, or branding.
+8. Do not introduce Gemini API directly.
+9. Do not expose API keys or secrets in client-side code.
+
+**Branding:** The application must remain entirely branded as Smarter AI. Apinex is an internal API provider only. Never display Apinex branding, logos, names, or promotional references anywhere in the user-facing application.
+
+# PART 2 — CRITICAL ISSUE 1: AI RESPONDS TOO SLOWLY
+
+Currently, the AI has become slow again.
+
+I want normal chat responses to be extremely fast.
+
+### Performance target
+
+- Target approximately 5–8 seconds for ordinary, non-live-data chat requests.
+- Minimize time to first response token.
+- Stream responses as soon as the provider sends usable output.
+- Avoid unnecessary processing before sending a request.
+- Do not wait for the complete AI response before displaying the first available streamed content.
+- Optimize backend, networking, request preparation, and conversation context handling.
+
+Important: 5–8 seconds is a performance target, not an unconditional guarantee. External provider latency, network conditions, and complex requests can exceed it. Measure actual latency and communicate delays honestly.
+
+### Investigate these areas
+
+Inspect:
+
+- Apinex API response latency.
+- Supabase Edge Function execution time.
+- SSE streaming implementation.
+- OkHttp configuration and connection reuse.
+- Coroutine scheduling and cancellation.
+- Request serialization.
+- Image attachment processing.
+- Conversation history retrieval.
+- Room database operations.
+- Model selection and routing.
+- Any unnecessary sequential API calls.
+- UI state updates and loading indicators.
+- Backend retries and timeout configuration.
+
+Identify exactly where time is being consumed.
+
+### Required optimizations
+
+- Reuse HTTP connections.
+- Avoid recreating clients for every request.
+- Use appropriate connection, read, write, and call timeouts.
+- Avoid unnecessary blocking operations on the main thread.
+- Use structured concurrency.
+- Avoid duplicate requests.
+- Prevent repeated history fetching when existing context is already available.
+- Optimize request payload size.
+- Use streaming whenever supported.
+- Start rendering received content immediately.
+- Avoid excessive database operations during streaming.
+- Ensure cancellation actually cancels the corresponding backend request when possible.
+
+Do not reduce answer quality or silently switch to weaker models just to improve latency.
+
+# PART 3 — CRITICAL ISSUE 2: AI STOPS RESPONDING AFTER 2–3 INTERACTIONS
+
+This is a major issue and must be permanently addressed.
+
+### Current reproduction scenario
+
+1. User asks AI to generate code.
+2. AI successfully generates code.
+3. User asks AI to generate an image.
+4. Image generation completes.
+5. User uploads an image and requests image analysis.
+6. The UI displays only:
+
+"Analyzing provided image"
+
+The AI never provides its actual response.
+
+I want this entire class of failures fixed.
+
+It must not matter how many previous messages the user has sent or what tasks they have performed. The AI should continue responding reliably.
+
+### Investigate the root cause
+
+Inspect:
+
+- ChatViewModel request state.
+- Repository request lifecycle.
+- Coroutine cancellation.
+- Stale loading states.
+- SSE connection cleanup.
+- Active request IDs.
+- Image generation request lifecycle.
+- Image analysis routing.
+- Attachment upload and download.
+- MIME type detection.
+- Image encoding and compression.
+- Vision model selection.
+- Context window overflow.
+- Conversation history serialization.
+- Supabase function timeouts.
+- Backend error handling.
+- Concurrent requests.
+- Response parsing.
+- UI state transitions.
+
+Do not assume the issue is only related to image analysis. Investigate why a previous operation could prevent a later independent operation from completing.
+
+### Implement a reliable request lifecycle
+
+Every AI request must have its own lifecycle.
+
+Suggested states:
+
+- IDLE
+- PREPARING
+- SENDING
+- STREAMING
+- PROCESSING
+- COMPLETED
+- FAILED
+- CANCELLED
+- TIMED_OUT
+
+Requirements:
+
+1. Every request gets a unique request ID.
+2. Every request has independent lifecycle management.
+3. Every request must terminate in a valid final state.
+4. Loading indicators must never remain active indefinitely.
+5. Always clean up request state in `finally` blocks.
+6. Handle exceptions without leaving the ViewModel in a stuck state.
+7. Prevent an old request from overwriting a newer request's state.
+8. Cancel the appropriate request when the user explicitly cancels it.
+9. Do not let image generation block normal chat or image analysis.
+10. Do not let one failed request permanently block subsequent requests.
+11. Allow independent requests where the architecture safely supports concurrency.
+12. Handle application backgrounding and screen recreation correctly.
+
+Add appropriate timeouts and graceful error messages.
+
+If a request fails, the user should be able to retry it without restarting the application or opening a new conversation.
+
+# PART 4 — LONG CONVERSATION INTELLIGENCE
+
+The AI must work reliably even when conversations become very long.
+
+Do not send the entire unlimited conversation history to the model on every request.
+
+Implement intelligent context management.
+
+### Context architecture
+
+Use:
+
+- A persistent conversation summary.
+- Recent relevant messages.
+- Relevant older messages when necessary.
+- Current task context.
+- Attachment references.
+- Relevant user-provided information.
+
+When the context approaches the selected model's verified limits:
+
+1. Summarize older conversation content.
+2. Preserve important user instructions.
+3. Preserve project architecture and technical decisions.
+4. Preserve relevant unfinished tasks.
+5. Preserve important attachment references.
+6. Keep recent messages intact.
+7. Continue the conversation using the compacted context.
+
+Never silently discard essential information.
+
+### Requirements
+
+- Avoid repeatedly summarizing the same messages.
+- Prevent context duplication.
+- Keep conversation history persistent.
+- Maintain correct message ordering.
+- Avoid mixing messages between conversations.
+- Avoid excessive context payloads.
+- Handle model-specific context limits.
+- Gracefully recover from context-length errors.
+
+The AI should remain useful after dozens or hundreds of messages.
+
+# PART 5 — IMAGE ANALYSIS RELIABILITY
+
+Image analysis must work regardless of previous chat activities.
+
+### Expected behavior
+
+When a user uploads an image and asks a question:
+
+1. Detect the image attachment.
+2. Validate the image.
+3. Identify its MIME type.
+4. Compress or resize only when appropriate.
+5. Prepare a provider-compatible vision payload.
+6. Select a model that has verified vision support.
+7. Send the request through the existing Apinex integration.
+8. Stream or display the actual response.
+9. Complete the request lifecycle correctly.
+
+### Important
+
+- Do not assume every Apinex model supports vision.
+- Use verified model capabilities.
+- If the selected model does not support vision, provide a clear explanation or offer a compatible model.
+- Do not silently send an image to a text-only model.
+- Handle oversized files.
+- Handle unsupported formats.
+- Handle empty or corrupted attachments.
+- Handle network failures.
+- Avoid indefinite "Analyzing provided image" states.
+
+Use the existing image-analysis functionality wherever possible.
+
+# PART 6 — LIVE REAL-TIME DATA INTELLIGENCE
+
+I want Smarter AI to provide current information instead of relying on outdated training knowledge when users ask time-sensitive questions.
+
+For relevant requests, the AI must retrieve current information from suitable external data sources before generating its answer.
+
+Apinex remains the AI reasoning and response provider. External services supply verified live information.
+
+### Core behavior
+
+Example:
+
+User:
+"Tell me the live gold rate."
+
+Expected sequence:
+
+1. Detect that the user is asking for live gold prices.
+2. Display a live activity indicator:
+
+"Checking live gold rates..."
+
+3. Fetch current gold data from an appropriate metals data provider.
+4. Validate the returned data.
+5. Normalize the currency, weight unit, location, and timestamp.
+6. Send the verified data to the selected AI model through the existing Apinex integration.
+7. Display a clear answer with the source and update timestamp.
+8. Display a chart if valid historical or time-series data is available.
+
+The AI must not invent a live price or present old training knowledge as current information.
+
+### Categories to support
+
+Implement a modular live-data architecture that can support:
+
+**A. Precious metals**
+- Gold.
+- Silver.
+- Other supported precious metals.
+
+**B. Cryptocurrencies**
+- Bitcoin.
+- Ethereum.
+- Other supported cryptocurrencies.
+- Current prices.
+- Market capitalization where available.
+- Price changes.
+- Trading volume.
+- Historical charts.
+
+**C. Foreign exchange**
+- USD/INR.
+- EUR/INR.
+- GBP/INR.
+- USD/EUR.
+- Other supported currency pairs.
+
+**D. Currency conversion**
+- Convert currencies using the latest available exchange rate.
+- Display the exchange rate used.
+- Display the converted amount.
+- Show the source and timestamp.
+- Clearly distinguish indicative market rates from actual bank or payment-provider rates.
+
+**E. Stocks and indices**
+- Supported stocks.
+- Major market indices.
+- Current or latest available prices.
+- Price changes.
+- Historical charts.
+
+**F. Commodities and other market data**
+- Oil.
+- Natural gas.
+- Other supported commodities.
+
+**G. Current information**
+- Current news.
+- Recent events.
+- Weather where supported.
+- Other time-sensitive factual information.
+
+Build the architecture so that additional data categories can be added without rewriting the main chat system.
+
+# PART 7 — LIVE DATA PROVIDERS
+
+Use appropriate providers for each category.
+
+Potential integrations include:
+
+- Binance or another suitable crypto market data provider for supported cryptocurrency pairs.
+- A dedicated metals API for gold and silver.
+- A dedicated FX/exchange-rate API for currency rates.
+- A suitable stock market data provider.
+- A suitable commodities data provider.
+- A reliable news or web-search provider for current information.
+
+Important provider rules:
+
+1. Do not assume Binance provides an authoritative local retail gold rate.
+2. Distinguish international spot gold from Indian retail gold prices.
+3. Distinguish 24K and 22K gold.
+4. Include units such as per gram, per 10 grams, or per troy ounce.
+5. Clearly identify the currency.
+6. Account for regional differences when a location-specific rate is requested.
+7. Never combine unrelated data sources as if they represent the same market.
+8. Never fabricate missing market data.
+9. Display the actual provider timestamp.
+10. Distinguish live, delayed, and historical data.
+
+### Provider configuration and costs
+
+- Investigate available free and affordable API tiers first.
+- Compare provider pricing, rate limits, coverage, and licensing.
+- Do not subscribe to paid services automatically.
+- Do not purchase credits or activate paid services without my approval.
+- Keep all provider credentials server-side.
+- Store secrets in secure Supabase environment variables.
+- Implement provider-specific timeouts, caching, and rate limiting.
+
+If an API requires a key that is not configured, report that requirement instead of pretending the integration is complete.
+
+# PART 8 — LIVE DATA ARCHITECTURE
+
+Implement a modular architecture:
+
+User Request
+→ Live Intent Detection
+→ Data Category Identification
+→ Provider Selection
+→ External API Request
+→ Data Validation
+→ Normalization
+→ Timestamp and Source Verification
+→ Apinex AI Reasoning
+→ Final Answer and Visualization
+
+The live-data service should be independent of the ordinary chat request pipeline.
+
+### Intent detection
+
+Examples that should trigger live-data retrieval:
+
+- "What is the gold rate today?"
+- "Tell me the live gold price."
+- "Bitcoin price right now?"
+- "Convert 500 USD into INR."
+- "What is today's USD to INR rate?"
+- "What is the current Ethereum price?"
+- "Show me today's silver rate."
+- "What is the current stock price?"
+
+Do not trigger unnecessary live requests for ordinary educational questions.
+
+For example:
+
+- "What is cryptocurrency?" → Normal AI response.
+- "What is Bitcoin's price right now?" → Live crypto lookup.
+- "Explain how currency conversion works." → Normal AI response.
+- "Convert 100 USD into INR today." → Live FX lookup.
+
+For ambiguous requests, ask a short clarification rather than guessing.
+
+### Data freshness
+
+- Use live provider endpoints when available.
+- Use WebSockets when genuinely supported and appropriate.
+- Otherwise use controlled polling.
+- Respect provider rate limits.
+- Cache data according to category and provider freshness.
+- Never describe cached or delayed data as real-time.
+- Show the last successful update timestamp.
+
+# PART 9 — LIVE ACTIVITY INDICATORS
+
+The user must understand what the AI is doing.
+
+Display category-specific activity indicators.
+
+Examples:
+
+- "Checking live gold rates..."
+- "Fetching current silver prices..."
+- "Checking Bitcoin market data..."
+- "Fetching live USD/INR exchange rates..."
+- "Converting currency using the latest available rate..."
+- "Fetching current stock prices..."
+- "Searching for the latest information..."
+- "Preparing your live market chart..."
+
+### UI requirements
+
+- Show the indicator immediately after the request is detected.
+- Update the indicator as the request progresses.
+- Keep the UI responsive.
+- Stop the indicator after success or failure.
+- Display a meaningful error if the provider is unavailable.
+- Never leave the UI stuck on a loading state.
+- Do not display fake percentage progress.
+
+Use honest stages rather than invented progress values.
+
+# PART 10 — LIVE CHARTS AND MARKET VISUALIZATION
+
+When a user requests current market information, display a useful chart wherever the provider supplies suitable time-series data.
+
+### Chart requirements
+
+For gold, silver, cryptocurrencies, currencies, and supported stocks:
+
+- Current price.
+- Historical price movement.
+- Appropriate time range.
+- Clearly labeled axes.
+- Currency and unit.
+- Last updated timestamp.
+- Provider/source attribution.
+- Live or delayed data status.
+
+Where supported, update the chart using WebSocket data or controlled polling.
+
+Do not pretend a static chart is live.
+
+Do not generate fake historical points or interpolate missing data to make a chart look complete.
+
+If only one current price is available, display the price clearly and explain that historical chart data is unavailable.
+
+### Gold chart example
+
+User:
+"Tell me live gold rate."
+
+Show:
+
+- Gold price.
+- 24K/22K distinction where supported.
+- Per gram or per 10 grams.
+- INR or requested currency.
+- Source.
+- Timestamp.
+- Historical/live chart where data is available.
+
+### Crypto chart example
+
+User:
+"Show me live Bitcoin price."
+
+Show:
+
+- BTC current price.
+- Selected currency.
+- 24-hour change where available.
+- Trading volume where available.
+- Historical chart.
+- Source and timestamp.
+
+# PART 11 — CURRENCY CONVERSION
+
+Implement a dedicated currency conversion workflow.
+
+Example:
+
+User:
+"Convert 500 USD into INR."
+
+Expected behavior:
+
+1. Detect the source and target currencies.
+2. Fetch the latest available USD/INR rate.
+3. Validate the response.
+4. Calculate the converted amount.
+5. Display the rate used.
+6. Display the amount converted.
+7. Show provider and timestamp.
+8. Mention that actual bank or card conversion rates may differ due to fees and spreads.
+
+Never use a hardcoded exchange rate as a live result.
+
+Support other currencies and amounts through the same architecture.
+
+# PART 12 — ADD FIVE ADDITIONAL APINEX MODELS
+
+Keep all seven existing models and ensure the final catalog contains 12 unique model entries.
+
+Add or verify these models:
+
+| Display Name | Exact Internal Model ID |
+|---|---|
+| GPT 6 Luna | `free/gpt-6-luna` |
+| Jev 1.13 | `free/jev-1.13` |
+| HY4 | `free/hy4` |
+| Mimo V2.6 Flash | `free/mimo-v2.6-flash` |
+| Gemini 3.8 Flash | `free/gemini-3.8-flash` |
+
+Preserve the existing seven models:
+
+| Display Name | Exact Internal Model ID |
+|---|---|
+| Muse Spark 1.3 | `free/muse-spark-1.3` |
+| Gemini 3.8 Flash | `free/gemini-3.8-flash` |
+| Qwen 3.8 Max | `free/qwen-3.8-max` |
+| Kimi K3 | `free/kimi-k3` |
+| DeepSeek V4.1 Flash | `free/deepseek-v4.1-flash` |
+| GLM 5.3 | `free/glm-5.3` |
+| GLM 5.3 Flash | `free/glm-5.3-flash` |
+
+**Important:** Gemini 3.8 Flash already exists in the existing seven-model catalog. Do not create a duplicate. Verify its existing entry and configuration.
+
+The final catalog must contain exactly 12 unique models.
+
+### Model integration requirements
+
+- Use the exact internal IDs in Apinex requests.
+- Preserve existing API integration.
+- Verify each model's availability before marking it operational.
+- Do not invent capabilities.
+- Verify vision, tool calling, and streaming support individually.
+- Preserve existing model selection behavior.
+- Keep model metadata organized in one maintainable catalog.
+
+# PART 13 — MODEL SELECTOR UI: HIDE FREE/ PREFIX
+
+I do not want the raw `free/` prefix displayed anywhere in the model selector.
+
+Examples:
+
+Internal ID: `free/gpt-6-luna`
+
+Visible label: `GPT 6 Luna`
+
+Internal ID: `free/jev-1.13`
+
+Visible label: `Jev 1.13`
+
+Internal ID: `free/hy4`
+
+Visible label: `HY4`
+
+Internal ID: `free/mimo-v2.6-flash`
+
+Visible label: `Mimo V2.6 Flash`
+
+Internal ID: `free/gemini-3.8-flash`
+
+Visible label: `Gemini 3.8 Flash`
+
+### Strict requirements
+
+- Remove `free/` from all user-facing model labels.
+- Preserve the complete original ID internally.
+- Never strip the prefix from actual API requests.
+- Keep display names and internal IDs as separate properties.
+- Do not display raw provider identifiers unnecessarily.
+- Do not show Apinex branding.
+- Maintain Smarter AI branding.
+- Keep the selector premium, clean, modern, and easy to navigate.
+- Clearly indicate the selected model.
+- Preserve existing selection persistence.
+
+# PART 14 — GPT 6 LUNA VOICE CHAT
+
+Add a complete Voice Chat feature powered by GPT 6 Luna.
+
+**Dedicated model:** GPT 6 Luna  
+**Exact model ID:** `free/gpt-6-luna`
+
+Voice Chat must use GPT 6 Luna regardless of which model is selected for normal chat.
+
+### Voice Chat UI
+
+Create a premium interface consistent with Smarter AI branding.
+
+Include:
+
+- Animated voice orb or waveform.
+- Listening indicator.
+- Processing/thinking indicator.
+- Speaking indicator.
+- Microphone control.
+- Mute/unmute.
+- End conversation.
+- Live speech transcription.
+- AI response display.
+- Clear voice activity feedback.
+
+### Voice interaction
+
+1. User opens Voice Chat.
+2. User activates the microphone.
+3. Speech is converted into text.
+4. The recognized text is sent to GPT 6 Luna through the existing secure Apinex backend.
+5. GPT 6 Luna generates a response.
+6. The response is converted into speech.
+7. Audio is played to the user.
+8. The user can interrupt the AI and speak again.
+9. The conversation continues with relevant context.
+
+### Technical requirements
+
+- Inspect actual GPT 6 Luna audio capabilities.
+- Do not assume native audio input/output exists.
+- If native audio is unsupported, use reliable speech-to-text and text-to-speech components.
+- Prefer suitable Android speech recognition and Android TextToSpeech where appropriate.
+- Support streaming responses where available.
+- Handle microphone permissions.
+- Handle recognition errors.
+- Handle network failures.
+- Stop speech when interrupted.
+- Prevent overlapping requests.
+- Release audio resources when the screen closes.
+- Do not record or upload audio in the background without explicit user action.
+- Preserve useful text conversation history.
+
+Voice Chat must be independent of the normal chat model selection.
+
+Example:
+
+Normal chat model = HY4.
+
+Voice Chat model = GPT 6 Luna.
+
+Changing the normal chat model must not change the dedicated Voice Chat model.
+
+# PART 15 — PRESERVE ALL EXISTING FEATURES
+
+Do not break or remove:
+
+- Existing seven Apinex models.
+- Existing chat functionality.
+- SSE streaming.
+- Conversation history.
+- Supabase authentication.
+- Email OTP authentication.
+- Room local persistence.
+- Image analysis.
+- Automatic chat image generation.
+- Smart Copy Blocks.
+- Dedicated image-generation screen.
+- Pollinations image generation.
+- Pollinations audio generation and existing Audio Studio.
+- Existing application branding.
+- Existing live-data features, if already implemented.
+
+Provider responsibilities must remain:
+
+**Apinex:** Normal chat, coding, debugging, reasoning, and supported image analysis.
+
+**Pollinations:** Existing image-generation and audio-generation functionality.
+
+**Live data providers:** Verified external market, currency, and other current information.
+
+**GPT 6 Luna through Apinex:** Dedicated Voice Chat reasoning and response generation.
+
+Do not move image generation to GPT 6 Luna.
+
+# PART 16 — SECURITY, COST AND RELIABILITY
+
+- Keep API credentials server-side.
+- Use secure Supabase environment variables.
+- Validate incoming requests.
+- Preserve existing authentication and authorization.
+- Do not weaken RLS or backend security.
+- Add request rate limits.
+- Add provider-specific timeouts.
+- Implement controlled retries.
+- Prevent retry loops.
+- Add caching where appropriate.
+- Prevent excessive API usage.
+- Do not automatically activate paid services.
+- Do not purchase subscriptions or API credits without my approval.
+- Report any required paid provider, pricing, or missing API key.
+
+# PART 17 — TESTING AND VERIFICATION
+
+Do not finish after writing code. Run actual tests.
+
+### A. Performance tests
+
+- Measure time to first token.
+- Measure total response time.
+- Test normal chat.
+- Test streaming.
+- Test long prompts.
+- Test multiple consecutive requests.
+- Identify backend and provider latency.
+
+### B. Long-conversation tests
+
+Simulate:
+
+1. Normal conversation.
+2. Code generation.
+3. Image generation.
+4. Image analysis.
+5. Another normal question.
+6. Another code-generation request.
+7. Multiple additional messages.
+
+Verify that all requests complete independently.
+
+### C. Image-analysis tests
+
+- Image upload.
+- MIME detection.
+- Payload construction.
+- Vision model selection.
+- Backend request.
+- Response parsing.
+- Loading-state cleanup.
+- Retry after failure.
+
+### D. Live-data tests
+
+- Gold price.
+- Silver price.
+- Bitcoin price.
+- Ethereum price.
+- USD/INR.
+- EUR/INR.
+- Currency conversion.
+- Stock price where supported.
+- Missing provider configuration.
+- Provider timeout.
+- Invalid API response.
+- Stale data.
+- Chart updates.
+- Source attribution.
+
+### E. Model tests
+
+- All 12 unique models.
+- Exact model IDs.
+- No duplicate catalog entries.
+- Correct model routing.
+- No visible `free/` prefix.
+- Correct selected-model persistence.
+- Streaming compatibility.
+
+### F. Voice Chat tests
+
+- Microphone permissions.
+- Speech recognition.
+- GPT 6 Luna routing.
+- Speech playback.
+- Interruptions.
+- End conversation.
+- Re-entry.
+- Network failure.
+- Audio cleanup.
+- Independent model selection.
+
+### G. Regression tests
+
+Verify:
+
+- Authentication.
+- OTP.
+- Normal chat.
+- SSE.
+- Conversation history.
+- Room database.
+- Image generation.
+- Image analysis.
+- Smart Copy Blocks.
+- Audio Studio.
+- Existing application navigation.
+
+Run unit tests, UI tests, and build verification where available.
+
+Do not report tests as passed unless they actually ran successfully.
+
+# PART 18 — FINAL IMPLEMENTATION REPORT
+
+After implementation, provide a complete report:
+
+1. Root causes of slow AI responses.
+2. Root causes of requests getting stuck after multiple interactions.
+3. Performance improvements implemented.
+4. Measured before-and-after latency, if available.
+5. Long conversation context-management architecture.
+6. Image-analysis reliability improvements.
+7. All 12 models and their exact IDs.
+8. Confirmation that `free/` is hidden from user-facing labels.
+9. Live-data providers integrated.
+10. Provider pricing, limits, and missing credentials.
+11. Categories supported by live-data retrieval.
+12. Chart and live-update implementation.
+13. Voice Chat implementation details.
+14. Files created and modified.
+15. Tests executed and actual results.
+16. Build status.
+17. Remaining limitations or pending tasks.
+
+Clearly distinguish:
+
+- Implemented and tested.
+- Implemented but not live-verified.
+- Requires an external API key.
+- Requires paid provider access.
+- Not supported by the provider.
+
+# FINAL INSTRUCTION
+
+Implement all these requirements in the existing Smarter AI application.
+
+Prioritize fixing the two critical performance and reliability problems before adding new features.
+
+Do not sacrifice the existing working functionality.
+
+Do not use fake live prices, fake chart data, fake progress percentages, or invented provider capabilities.
+
+Do not display Apinex branding anywhere in the application.
+
+The final product must feel like a fast, reliable, intelligent, premium AI assistant called **Smarter AI**.
+
+Inspect → Diagnose → Implement → Test → Fix → Verify → Report.
+
+Do not stop at recommendations. Complete the actual implementation wherever the existing project and available credentials permit.

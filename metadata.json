@@ -1,0 +1,8 @@
+{
+  "name": "Smarter AI",
+  "description": "Production-grade AI workspace powered by the Apinex Bond API with 7 selectable models, Brevo 6-digit email OTP verification, Supabase cloud sync, Pollinations Image Studio, and Voice Studio.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
